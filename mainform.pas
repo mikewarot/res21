@@ -34,6 +34,8 @@ type
 
 var
   Form1: TForm1;
+  BinarySource : String;
+  ByteCount : LongInt;
 
 implementation
 
@@ -41,12 +43,37 @@ implementation
 
 { TForm1 }
 
+procedure DumpAll;
+var
+  i : integer;
+  s : string;
+begin
+  Form1.Memo1.Append('--- DUMP ---');
+  for i := 1 to ByteCount do
+  begin
+    s := (i-1).ToHexString(4)+': '+Ord(BinarySource[i]).ToHexString(2);
+    Form1.Memo1.Append(s);
+  end;
+  s := '--- '+ByteCount.ToString+' Bytes Dumped ---';
+  Form1.Memo1.Append(s);
+end;
+
 procedure LoadFile(FileName : String);
 var
   s : string;
+  f : file;
 begin
+  S := '';
+  BinarySource := S.PadRight(2048);
   s := 'File Load: '+FileName;
   Form1.Memo1.Append(s);
+  Assign(F,FileName);
+  Reset(F,1);
+  BlockRead(F,BinarySource[1],2048,ByteCount);
+  Close(F);
+  s := ByteCount.ToString + ' bytes loaded';
+  Form1.Memo1.Append(s);
+  DumpAll;
 end;
 
 procedure TForm1.MenuOpenClick(Sender: TObject);
