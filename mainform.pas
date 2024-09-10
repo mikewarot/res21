@@ -34,7 +34,7 @@ type
 
 var
   Form1: TForm1;
-  BinarySource : String;
+  BinarySource : Array[0..2048] of byte;
   ByteCount : LongInt;
 
 implementation
@@ -49,9 +49,9 @@ var
   s : string;
 begin
   Form1.Memo1.Append('--- DUMP ---');
-  for i := 1 to ByteCount do
+  for i := 0 to ByteCount-1 do
   begin
-    s := (i-1).ToHexString(4)+': '+Ord(BinarySource[i]).ToHexString(2);
+    s := (i).ToHexString(4)+': '+Ord(BinarySource[i]).ToHexString(2);
     Form1.Memo1.Append(s);
   end;
   s := '--- '+ByteCount.ToString+' Bytes Dumped ---';
@@ -64,12 +64,12 @@ var
   f : file;
 begin
   S := '';
-  BinarySource := S.PadRight(2048);
+  FillChar(BinarySource,2048,0);
   s := 'File Load: '+FileName;
   Form1.Memo1.Append(s);
   Assign(F,FileName);
   Reset(F,1);
-  BlockRead(F,BinarySource[1],2048,ByteCount);
+  BlockRead(F,BinarySource,2048,ByteCount);
   Close(F);
   s := ByteCount.ToString + ' bytes loaded';
   Form1.Memo1.Append(s);
