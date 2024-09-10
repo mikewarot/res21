@@ -7,6 +7,7 @@ object Form1: TForm1
   ClientHeight = 523
   ClientWidth = 901
   Menu = MainMenu1
+  OnCreate = FormCreate
   LCLVersion = '3.0.0.2'
   object StatusBar1: TStatusBar
     Left = 0
@@ -35,6 +36,15 @@ object Form1: TForm1
     )
     ScrollBars = ssAutoBoth
     TabOrder = 1
+  end
+  object Button1: TButton
+    Left = 34
+    Height = 25
+    Top = 330
+    Width = 222
+    Caption = 'Disassemble'
+    TabOrder = 2
+    OnClick = Button1Click
   end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.*.bin'
