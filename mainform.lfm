@@ -52,6 +52,28 @@ object Form1: TForm1
     TabOrder = 2
     OnClick = Button1Click
   end
+  object LabelList: TValueListEditor
+    Left = 336
+    Height = 100
+    Top = 311
+    Width = 528
+    DefaultColWidth = 100
+    FixedCols = 0
+    RowCount = 2
+    TabOrder = 3
+    KeyOptions = [keyEdit]
+    Strings.Strings = (
+      '0000=Start'
+    )
+    TitleCaptions.Strings = (
+      'Address'
+      'Label'
+    )
+    ColWidths = (
+      100
+      424
+    )
+  end
   object OpenDialog1: TOpenDialog
     DefaultExt = '.*.bin'
     Left = 142

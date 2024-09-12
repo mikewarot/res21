@@ -4,7 +4,7 @@ interface
 
 uses
   Classes, SysUtils, Forms, Controls, Graphics, Dialogs, Menus, ComCtrls,
-  StdCtrls;
+  StdCtrls, ValEdit, Grids;
 
 type
 
@@ -22,6 +22,7 @@ type
     Separator1: TMenuItem;
     OpenDialog1: TOpenDialog;
     StatusBar1: TStatusBar;
+    LabelList: TValueListEditor;
     procedure Button1Click(Sender: TObject);
     procedure FormCreate(Sender: TObject);
     procedure MenuItem1Click(Sender: TObject);
@@ -29,6 +30,7 @@ type
     procedure MenuFileExitClick(Sender: TObject);
     procedure MenuFileOpenClick(Sender: TObject);
     procedure MenuOpenClick(Sender: TObject);
+    procedure ValueListEditor1Click(Sender: TObject);
   private
 
   public
@@ -47,32 +49,56 @@ implementation
 {$R *.lfm}
 
 { TForm1 }
+Function Y:Byte;
+begin
+  Y := BinarySource[SourceOffset];
+  Inc(SourceOffset);
+end;
+
+Function NiceAddress(Addr : Longint):String;
+var
+  Name,Key : string;
+  Row : integer;
+begin
+  Row := 0;
+  Key := Addr.ToHexString(4);
+  Name := 'L_'+Key;
+  If Form1.LabelList.FindRow(Key,Row) then
+    Name := Form1.LabelList.Rows[Row].Strings[1]
+  else
+    Form1.LabelList.InsertRow(Key,Name,True);
+  NiceAddress := Name;
+//  Form1.Memo1.Append(Name);
+end;
 
 procedure Disassemble1; // disassemble the current instruction
 var
   x : byte;
   s   : string;
+  R   : Integer;
 
-  Function Y:Byte;
-  begin
-    Y := BinarySource[SourceOffset];
-    Inc(SourceOffset);
-  end;
 
 begin
   S := SourceOffset.ToHexString(4)+': ';
+
+  R := 0;
+  If Form1.LabelList.FindRow(SourceOffset.ToHexString(4),R) then
+    S := Form1.LabelList.Rows[R].Strings[1]+ ': '
+//    S := Form1.LabelList.Rows[R].Values['Label'] + ': '
+  else
+    Form1.LabelList.InsertRow(SourceOffset.ToHexString(4),'L_'+SourceOffset.ToHexString(4),True);
   x := BinarySource[SourceOffset];
   inc(SourceOffset);
   Case X of
     $00 		: S := S + 'NOP';
     $03 		: S := S + 'ADD     A,#'+Y.ToHexString(2)+'h';
-    $04,$24,$44,$64 	: S := S + 'JMP     '+ (((X SHR 5) SHL 8) + Y).ToHexString(4);
+    $04,$24,$44,$64 	: S := S + 'JMP     '+ NiceAddress(((X SHR 5) SHL 8) + Y);
     $07                 : S := S + 'DEC     A';
     $08..$0a 		: S := S + 'IN      A,P' + (X and 3).ToHexString(1);
     $10..$11  		: S := S + 'INC     @R'  +(X and $01).ToHexString(1);
     $13 		: S := S + 'ADDC    A,#'+Y.ToHexString(2)+'h';
-    $14,$34,$54,$74 	: s := S + 'CALL    '+ (((X SHR 5) SHL 8) + Y).ToHexString(4);
-    $16 		: S := S + 'JTF     '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $14,$34,$54,$74 	: s := S + 'CALL    '+ NiceAddress(((X SHR 5) SHL 8) + Y);
+    $16 		: S := S + 'JTF     '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $17                 : S := S + 'INC     A';
     $18..$1f  		: S := S + 'INC     R'   +(X and $07).ToHexString(1);
 
@@ -88,13 +114,13 @@ begin
     $42                 : S := S + 'MOV     A,T';
     $43 		: S := S + 'ORL     A,#'+Y.ToHexString(2)+'h';
     $45                 : S := S + 'STRT    CNT';
-    $46 		: S := S + 'JNT1    '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $46 		: S := S + 'JNT1    '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $47                 : S := S + 'SWAP    A';
     $48..$4f  		: S := S + 'ORL     A,R'   +(X and $07).ToHexString(1);
     $50..$51  		: S := S + 'ANL     A,@R'  +(X and $01).ToHexString(1);
     $53 		: S := S + 'ANL     A,#'+Y.ToHexString(2)+'h';
     $55                 : S := S + 'STRT    T';
-    $56 		: S := S + 'JT1     '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $56 		: S := S + 'JT1     '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $57                 : S := S + 'DA      A';
     $58..$5f  		: S := S + 'ANL     A,R'   +(X and $07).ToHexString(1);
     $60..$61  		: S := S + 'ADD     A,@R'  +(X and $01).ToHexString(1);
@@ -110,7 +136,7 @@ begin
     $83                 : S := S + 'RET';
 
     $90                 : S := S + 'OUTL    P0,A';
-    $96 		: S := S + 'JNZ     '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $96 		: S := S + 'JNZ     '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $97                 : S := S + 'CLR     C';
     $9c..$9f  		: S := S + 'ANLD    P' + ((X and $03)+4).ToHexString(1) + ',A';
     $a0..$a1            : S := S + 'MOV     @R'+(X AND $01).ToHexString(1)+',A';
@@ -118,15 +144,15 @@ begin
     $a8..$af  		: S := S + 'MOV     R'+(X and $07).ToHexString(1)+',A';
     $b0..$b1            : S := S + 'MOV     @R'+(X and $01).ToHexString(1)+',#'+Y.ToHexString(2)+'h';
     $b8..$bf  		: S := S + 'MOV     R'+(X AND $07).ToHexString(1)+',#'+Y.ToHexString(2)+'h';
-    $c6 		: S := S + 'JZ      '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $c6 		: S := S + 'JZ      '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $d0..$d1  		: S := S + 'XRL     A,@R'+(X AND $01).ToHexString(1);
     $d3                 : S := S + 'XRL     A,#'+Y.ToHexString(2)+'h';
     $d8..$df  		: S := S + 'XRL     A,R'+(X and $07).ToHexString(1);
-    $e6 		: S := S + 'JNC     '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $e6 		: S := S + 'JNC     '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $e7                 : S := S + 'RL      A';
-    $e8..$ef  		: S := S + 'DJNZ    R'+(X and $07).ToHexString(1)+','+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $e8..$ef  		: S := S + 'DJNZ    R'+(X and $07).ToHexString(1)+','+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $f0..$f1  		: S := S + 'MOV     A,@R'+(X AND $01).ToHexString(1);
-    $f6 		: S := S + 'JC      '+ (((SourceOffset-1) AND $ff00) OR Y).ToHexString(4);
+    $f6 		: S := S + 'JC      '+ NiceAddress(((SourceOffset-1) AND $ff00) OR Y);
     $f7                 : S := S + 'RLC     A';
     $f8..$ff  		: S := S + 'MOV     A,R' +(X and $07).ToHexString(1);
   else
@@ -192,6 +218,11 @@ begin
 
 end;
 
+procedure TForm1.ValueListEditor1Click(Sender: TObject);
+begin
+
+end;
+
 procedure TForm1.MenuItem1Click(Sender: TObject);
 begin
   Application.Terminate;
@@ -208,6 +239,7 @@ begin
   SourceSize := 0;
   SourceOffset := 0;
 end;
+
 
 procedure TForm1.MenuHelpAboutClick(Sender: TObject);
 begin
